@@ -1,6 +1,5 @@
 export { GeminiClient } from './gemini.js';
 export { buildCompareMessages } from './prompts/compare.js';
-export { buildInferMessages } from './prompts/infer.js';
 export { buildRecommendMessages } from './prompts/recommend.js';
 export type {
 	AIClient,

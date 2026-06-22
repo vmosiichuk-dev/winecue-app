@@ -46,8 +46,9 @@ describe('applyScoringRules', () => {
 			},
 		];
 
+		const baseScoreWithoutRule = applyScoringRules(wines, [])[0].scoreBreakdown.baseScore;
 		const result = applyScoringRules(wines, rules);
-		expect(result[0].scoreBreakdown.baseScore).toBeGreaterThan(50);
+		expect(result[0].scoreBreakdown.baseScore).toBe(baseScoreWithoutRule + 15);
 	});
 
 	it('applies filter_out rule', () => {
@@ -127,8 +128,9 @@ describe('applyScoringRules', () => {
 			},
 		];
 
+		const baseScoreWithoutRules = applyScoringRules(wines, [])[0].scoreBreakdown.baseScore;
 		const result = applyScoringRules(wines, rules);
-		expect(result[0].scoreBreakdown.baseScore).toBeGreaterThan(50);
+		expect(result[0].scoreBreakdown.baseScore).toBe(baseScoreWithoutRules + 15);
 	});
 
 	it('adds new arrival boost automatically', () => {
@@ -175,7 +177,8 @@ describe('applyScoringRules', () => {
 			},
 		];
 
+		const baseScoreWithoutRule = applyScoringRules(wines, [])[0].scoreBreakdown.baseScore;
 		const result = applyScoringRules(wines, rules);
-		expect(result[0].scoreBreakdown.baseScore).toBeGreaterThan(50);
+		expect(result[0].scoreBreakdown.baseScore).toBe(baseScoreWithoutRule + 10);
 	});
 });

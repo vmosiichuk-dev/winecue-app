@@ -7,7 +7,10 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 export const get = query({
 	args: {},
 	handler: async (ctx) => {
-		const state = await ctx.db.query('authState').first();
+		const state = await ctx.db
+			.query('authState')
+			.withIndex('by_singleton', (q) => q.eq('singleton', 'AUTH'))
+			.unique();
 		return state ?? null;
 	},
 });
@@ -17,7 +20,10 @@ export const upsert = mutation({
 		pinHash: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const existing = await ctx.db.query('authState').first();
+		const existing = await ctx.db
+			.query('authState')
+			.withIndex('by_singleton', (q) => q.eq('singleton', 'AUTH'))
+			.unique();
 		if (existing) {
 			await ctx.db.patch(existing._id, {
 				pinHash: args.pinHash,
@@ -28,6 +34,7 @@ export const upsert = mutation({
 			return existing._id;
 		}
 		return await ctx.db.insert('authState', {
+			singleton: 'AUTH',
 			pinHash: args.pinHash,
 			failedAttempts: 0,
 		});
@@ -39,7 +46,10 @@ export const verify = mutation({
 		pinHash: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const state = await ctx.db.query('authState').first();
+		const state = await ctx.db
+			.query('authState')
+			.withIndex('by_singleton', (q) => q.eq('singleton', 'AUTH'))
+			.unique();
 		if (!state) {
 			return { success: false as const, error: 'NOT_CONFIGURED' as const };
 		}

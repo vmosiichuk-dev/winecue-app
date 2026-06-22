@@ -2,9 +2,45 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 
 export const list = query({
-	args: {},
-	handler: async (ctx) => {
-		return await ctx.db.query('wines').collect();
+	args: {
+		isPublished: v.optional(v.boolean()),
+		inStock: v.optional(v.boolean()),
+		color: v.optional(v.string()),
+		priceMin: v.optional(v.number()),
+		priceMax: v.optional(v.number()),
+		excludeWineIds: v.optional(v.array(v.id('wines'))),
+	},
+	handler: async (ctx, args) => {
+		const { color, priceMin, priceMax, excludeWineIds, isPublished, inStock } = args;
+		let query = ctx.db.query('wines');
+		if (color) {
+			query = query.withIndex('by_color', (q) => q.eq('color', color));
+		} else if (priceMin !== undefined || priceMax !== undefined) {
+			query = query.withIndex('by_price', (q) => {
+				let range = q;
+				if (priceMin !== undefined) range = range.gte('price', priceMin);
+				if (priceMax !== undefined) range = range.lte('price', priceMax);
+				return range;
+			});
+		}
+
+		let results = await query.collect();
+		if (isPublished !== undefined) {
+			results = results.filter((w) => w.isPublished === isPublished);
+		}
+		if (inStock !== undefined) {
+			results = results.filter((w) => (inStock ? w.stock > 0 : w.stock === 0));
+		}
+		if (color === undefined && priceMin !== undefined) {
+			results = results.filter((w) => w.price >= priceMin);
+		}
+		if (color === undefined && priceMax !== undefined) {
+			results = results.filter((w) => w.price <= priceMax);
+		}
+		if (excludeWineIds !== undefined && excludeWineIds.length > 0) {
+			results = results.filter((w) => !excludeWineIds.includes(w._id));
+		}
+		return results;
 	},
 });
 
@@ -33,22 +69,29 @@ export const search = query({
 		searchName: v.optional(v.string()),
 		searchProducer: v.optional(v.string()),
 		sortBy: v.optional(
-			v.union(v.literal('price'), v.literal('name'), v.literal('stock'), v.literal('createdAt'))
+			v.union(v.literal('price'), v.literal('name'), v.literal('stock'), v.literal('importedAt'))
 		),
 		sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
 		limit: v.optional(v.number()),
-		cursor: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit ?? 50;
 		const sortOrder = args.sortOrder ?? 'asc';
+		const { searchName, searchProducer, inStock, minPrice, maxPrice, color } = args;
 
-		let results = await ctx.db.query('wines').collect();
-
-		if (args.color) {
-			results = results.filter((w) => w.color === args.color);
+		let query = ctx.db.query('wines');
+		if (color) {
+			query = query.withIndex('by_color', (q) => q.eq('color', color));
+		} else if (minPrice !== undefined || maxPrice !== undefined) {
+			query = query.withIndex('by_price', (q) => {
+				let range = q;
+				if (minPrice !== undefined) range = range.gte('price', minPrice);
+				if (maxPrice !== undefined) range = range.lte('price', maxPrice);
+				return range;
+			});
 		}
-		const { searchName, searchProducer, inStock, minPrice, maxPrice } = args;
+
+		let results = await query.collect();
 
 		if (searchName) {
 			results = results.filter((w) => w.name.toLowerCase().includes(searchName.toLowerCase()));
@@ -61,10 +104,10 @@ export const search = query({
 		if (inStock !== undefined) {
 			results = results.filter((w) => (inStock ? w.stock > 0 : w.stock === 0));
 		}
-		if (minPrice !== undefined) {
+		if (color === undefined && minPrice !== undefined) {
 			results = results.filter((w) => w.price >= minPrice);
 		}
-		if (maxPrice !== undefined) {
+		if (color === undefined && maxPrice !== undefined) {
 			results = results.filter((w) => w.price <= maxPrice);
 		}
 
@@ -74,7 +117,7 @@ export const search = query({
 			results.sort((a, b) => a.price - b.price);
 		} else if (args.sortBy === 'stock') {
 			results.sort((a, b) => a.stock - b.stock);
-		} else if (args.sortBy === 'createdAt') {
+		} else if (args.sortBy === 'importedAt') {
 			results.sort((a, b) => a.importedAt - b.importedAt);
 		}
 
@@ -244,6 +287,7 @@ export const bulkUpsert = mutation({
 				grapeVariety: v.optional(v.string()),
 				vintage: v.optional(v.number()),
 				costPrice: v.optional(v.number()),
+				marginPercent: v.optional(v.number()),
 				sweetness: v.optional(
 					v.union(
 						v.literal('dry'),
@@ -277,9 +321,8 @@ export const bulkUpsert = mutation({
 		for (const wine of args.wines) {
 			const existing = await ctx.db
 				.query('wines')
-				.withIndex('by_producer', (q) => q.eq('producer', wine.producer))
-				.filter((q) => q.eq(q.field('name'), wine.name))
-				.first();
+				.withIndex('by_producer_name', (q) => q.eq('producer', wine.producer).eq('name', wine.name))
+				.unique();
 
 			if (existing) {
 				await ctx.db.patch(existing._id, {

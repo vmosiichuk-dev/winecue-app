@@ -62,7 +62,9 @@ function resolveField(ctx: WineScoreContext, fieldPath: string): unknown {
 		'wine.isClearance': ctx.wine.isClearance,
 		'wine.isPriorityStock': ctx.wine.isPriorityStock,
 		'query.priceMin': ctx.query?.priceMin,
+		'query.price_min': ctx.query?.priceMin,
 		'query.priceMax': ctx.query?.priceMax,
+		'query.price_max': ctx.query?.priceMax,
 		'query.color': ctx.query?.color,
 		'query.sweetness': ctx.query?.sweetness,
 		'query.body': ctx.query?.body,
@@ -80,13 +82,17 @@ function evaluateCondition(condition: RuleCondition, ctx: WineScoreContext): boo
 		case 'eq':
 			return fieldValue === value;
 		case 'lt':
-			return (fieldValue as number) < (value as number);
 		case 'gt':
-			return (fieldValue as number) > (value as number);
 		case 'lte':
-			return (fieldValue as number) <= (value as number);
-		case 'gte':
-			return (fieldValue as number) >= (value as number);
+		case 'gte': {
+			if (typeof fieldValue !== 'number' || typeof value !== 'number') {
+				return false;
+			}
+			if (operator === 'lt') return fieldValue < value;
+			if (operator === 'gt') return fieldValue > value;
+			if (operator === 'lte') return fieldValue <= value;
+			return fieldValue >= value;
+		}
 		case 'in':
 			return Array.isArray(value) && value.includes(fieldValue as string);
 		default:

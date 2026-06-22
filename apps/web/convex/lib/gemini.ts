@@ -23,7 +23,7 @@ export interface GenerateStructuredResult<T> {
 	usage: GenerationUsage;
 }
 
-const DEFAULT_TEXT_MODEL = 'gemini-2.0-flash';
+export const DEFAULT_TEXT_MODEL = 'gemini-2.0-flash';
 const DEFAULT_EMBEDDING_MODEL = 'text-embedding-004';
 
 function toGeminiContents(messages: Message[]) {

@@ -9,7 +9,10 @@ let client: ConvexClient | null = null;
 
 export function getConvexClient(): ConvexClient {
 	if (!client) {
-		const url = import.meta.env.VITE_CONVEX_URL ?? 'https://keen-buzzard-659.convex.cloud';
+		const url = import.meta.env.PUBLIC_CONVEX_URL;
+		if (!url) {
+			throw new Error('PUBLIC_CONVEX_URL environment variable is not set');
+		}
 		client = new ConvexClient(url);
 	}
 	return client;

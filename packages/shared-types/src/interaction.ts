@@ -5,7 +5,7 @@ export const RecommendedWineSchema = z.object({
 	wineId: z.string(),
 	name: z.string(),
 	producer: z.string(),
-	price: z.number(),
+	price: z.number().min(0),
 	confidence: z.number().min(0).max(1),
 	reasoning: z.string().describe('Why this wine was recommended'),
 	provenanceTags: z.array(DataProvenance),
@@ -42,12 +42,12 @@ export const InteractionSchema = z.object({
 	feedback: z.string().optional().describe('Associate or customer feedback'),
 	aiModel: z.string().describe('Identifier of the AI model used'),
 	usedFallback: z.boolean().default(false),
-	responseTimeMs: z.number().describe('Total server processing time'),
-	promptTokens: z.number().optional().describe('Tokens consumed by the prompt'),
-	completionTokens: z.number().optional().describe('Tokens generated in the response'),
-	totalTokens: z.number().optional().describe('Total tokens consumed'),
+	responseTimeMs: z.number().int().min(0).describe('Total server processing time'),
+	promptTokens: z.number().int().min(0).optional().describe('Tokens consumed by the prompt'),
+	completionTokens: z.number().int().min(0).optional().describe('Tokens generated in the response'),
+	totalTokens: z.number().int().min(0).optional().describe('Total tokens consumed'),
 	promptVersion: z.string().optional().describe('Version hash of the prompt template used'),
-	createdAt: z.number(),
+	createdAt: z.number().int().min(0),
 });
 
 export type Interaction = z.infer<typeof InteractionSchema>;

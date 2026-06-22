@@ -12,7 +12,7 @@ pnpm install
 
 # Set up environment variables
 cp apps/web/.env.example apps/web/.env
-# Fill in your Convex URLs and Gemini API key
+# Fill in GEMINI_API_KEY, PUBLIC_CONVEX_URL, and PUBLIC_CONVEX_SITE_URL
 
 # Initialize Convex (generates _generated files)
 cd apps/web

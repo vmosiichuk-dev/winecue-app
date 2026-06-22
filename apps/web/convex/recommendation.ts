@@ -1,9 +1,9 @@
 import { AIResponseSchema, CompareResponseSchema } from '@winecue/shared-types';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { action } from './_generated/server';
-import { GeminiClient } from './lib/gemini.js';
+import { DEFAULT_TEXT_MODEL, GeminiClient } from './lib/gemini.js';
 import { buildCompareMessages } from './lib/prompts/compare.js';
 import { buildRecommendMessages } from './lib/prompts/recommend.js';
 
@@ -30,27 +30,25 @@ export const recommend = action({
 			throw new Error('GEMINI_API_KEY not configured');
 		}
 
-		const allWines: Doc<'wines'>[] = await ctx.runQuery(api.wines.list, {});
-
-		let candidates = allWines.filter((w: Doc<'wines'>) => w.isPublished && w.stock > 0);
-
 		const { color, priceMin, priceMax, excludeWineIds } = args.filters ?? {};
 
-		if (color) {
-			candidates = candidates.filter((w: Doc<'wines'>) => w.color === color);
-		}
-		if (priceMin !== undefined) {
-			candidates = candidates.filter((w: Doc<'wines'>) => w.price >= priceMin);
-		}
-		if (priceMax !== undefined) {
-			candidates = candidates.filter((w: Doc<'wines'>) => w.price <= priceMax);
-		}
-		if (excludeWineIds?.length) {
-			candidates = candidates.filter((w: Doc<'wines'>) => !excludeWineIds.includes(w._id));
-		}
+		const candidates: Doc<'wines'>[] = await ctx.runQuery(api.wines.list, {
+			isPublished: true,
+			inStock: true,
+			color,
+			priceMin,
+			priceMax,
+			excludeWineIds: excludeWineIds?.map((id) => id as unknown as Id<'wines'>) ?? [],
+		});
 
 		const topCandidates = candidates
-			.sort((a: Doc<'wines'>, b: Doc<'wines'>) => b.stock - a.stock)
+			.sort((a: Doc<'wines'>, b: Doc<'wines'>) => {
+				const marginA = a.marginPercent ?? 0;
+				const marginB = b.marginPercent ?? 0;
+				if (marginA !== marginB) return marginB - marginA;
+				if (a.isPriorityStock !== b.isPriorityStock) return a.isPriorityStock ? -1 : 1;
+				return b.stock - a.stock;
+			})
 			.slice(0, 20);
 
 		const client = new GeminiClient(apiKey);
@@ -62,6 +60,7 @@ export const recommend = action({
 				name: w.name,
 				producer: w.producer,
 				price: w.price,
+				marginPercent: w.marginPercent,
 				color: w.color,
 				sweetness: w.sweetness,
 				body: w.body,
@@ -105,7 +104,7 @@ export const recommend = action({
 		await ctx.runMutation(api.interactions.create, {
 			sessionId: args.sessionId,
 			query: args.query,
-			aiModel: 'gemini-2.0-flash',
+			aiModel: DEFAULT_TEXT_MODEL,
 			usedFallback: false,
 			responseTimeMs,
 			promptTokens: result.usage.promptTokens,

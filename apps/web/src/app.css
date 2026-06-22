@@ -26,7 +26,7 @@
 
 	/* Typography */
 	--font-body: system-ui, -apple-system, sans-serif;
-	--font-heading: Georgia, serif;
+	--font-heading: georgia, serif;
 	--text-sm: var(--font-size-0);
 	--text-base: var(--font-size-1);
 	--text-lg: var(--font-size-2);

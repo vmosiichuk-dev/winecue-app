@@ -59,6 +59,7 @@ export default defineSchema({
 		.index('by_stock', ['stock'])
 		.index('by_color', ['color'])
 		.index('by_producer', ['producer'])
+		.index('by_producer_name', ['producer', 'name'])
 		.index('by_flag', ['isNewArrival', 'isClearance', 'isPriorityStock'])
 		.searchIndex('search_name', { searchField: 'name' })
 		.searchIndex('search_producer', { searchField: 'producer' })
@@ -169,11 +170,12 @@ export default defineSchema({
 		.index('by_date', ['createdAt']),
 
 	authState: defineTable({
+		singleton: v.literal('AUTH'),
 		pinHash: v.string(),
 		lastAuthenticated: v.optional(v.number()),
 		failedAttempts: v.number(),
 		lockedUntil: v.optional(v.number()),
-	}),
+	}).index('by_singleton', ['singleton']),
 
 	importLogs: defineTable({
 		fileName: v.string(),

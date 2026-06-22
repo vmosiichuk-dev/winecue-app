@@ -32,6 +32,31 @@ describe('WineSchema', () => {
 		const result = WineSchema.safeParse({});
 		expect(result.success).toBe(false);
 	});
+
+	it('rejects a vintage year below 1800', () => {
+		const result = WineSchema.safeParse({ ...validWine, vintage: 1700 });
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects a vintage year beyond next year', () => {
+		const result = WineSchema.safeParse({ ...validWine, vintage: new Date().getFullYear() + 2 });
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects an invalid producerUrl', () => {
+		const result = WineSchema.safeParse({ ...validWine, producerUrl: 'not-a-url' });
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects tastingNotes containing non-string values', () => {
+		const result = WineSchema.safeParse({ ...validWine, tastingNotes: [123, { note: 'test' }] });
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts a wine with zero stock', () => {
+		const result = WineSchema.safeParse({ ...validWine, stock: 0 });
+		expect(result.success).toBe(true);
+	});
 });
 
 describe('WineColor', () => {

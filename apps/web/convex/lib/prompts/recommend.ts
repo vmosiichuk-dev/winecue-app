@@ -5,6 +5,7 @@ interface WineCandidate {
 	name: string;
 	producer: string;
 	price: number;
+	marginPercent?: number;
 	color: string;
 	sweetness?: string;
 	body?: string;
@@ -35,17 +36,24 @@ interface RecommendContext {
 	candidates: WineCandidate[];
 }
 
+function formatDimensions(dimensions?: WineCandidate['structuredDimensions']): string {
+	if (!dimensions) return '';
+	let dims = ` [dryness:${dimensions.dryness}/10, body:${dimensions.body}/10, acidity:${dimensions.acidity}/10`;
+	if (dimensions.tannin !== undefined) {
+		dims += `, tannin:${dimensions.tannin}/10`;
+	}
+	return `${dims}]`;
+}
+
+function formatWineDetails(w: WineCandidate): string {
+	const dims = formatDimensions(w.structuredDimensions);
+	const notes = w.tastingNotes.length > 0 ? ` Notes: ${w.tastingNotes.join(', ')}.` : '';
+	const desc = w.description ? ` ${w.description}` : '';
+	return `- [${w.id}] ${w.name} by ${w.producer} (${w.region ?? 'Unknown region'}, ${w.vintage ?? 'NV'}) — ${w.color}, ${w.grapeVariety ?? 'blend'}${w.sweetness ? `, ${w.sweetness}` : ''}${w.body ? `, ${w.body}-bodied` : ''} — ${w.price} PLN${dims}.${notes}${desc}`;
+}
+
 export function buildRecommendMessages(ctx: RecommendContext): Message[] {
-	const candidateList = ctx.candidates
-		.map((w) => {
-			const dims = w.structuredDimensions
-				? ` [dryness:${w.structuredDimensions.dryness}/10, body:${w.structuredDimensions.body}/10, acidity:${w.structuredDimensions.acidity}/10${w.structuredDimensions.tannin !== undefined ? `, tannin:${w.structuredDimensions.tannin}/10` : ''}]`
-				: '';
-			const notes = w.tastingNotes.length > 0 ? ` Notes: ${w.tastingNotes.join(', ')}.` : '';
-			const desc = w.description ? ` ${w.description}` : '';
-			return `- [${w.id}] ${w.name} by ${w.producer} (${w.region ?? 'Unknown region'}, ${w.vintage ?? 'NV'}) — ${w.color}, ${w.grapeVariety ?? 'blend'}${w.sweetness ? `, ${w.sweetness}` : ''}${w.body ? `, ${w.body}-bodied` : ''} — ${w.price} PLN${dims}.${notes}${desc}`;
-		})
-		.join('\n');
+	const candidateList = ctx.candidates.map(formatWineDetails).join('\n');
 
 	const filterParts: string[] = [];
 	if (ctx.filters?.color) filterParts.push(`color: ${ctx.filters.color}`);

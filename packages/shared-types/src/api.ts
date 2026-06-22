@@ -17,7 +17,7 @@ export const RecommendRequestSchema = z.object({
 		.optional(),
 	sessionContext: z
 		.object({
-			sessionId: z.string().max(500),
+			sessionId: z.string().max(64),
 			previousQueries: z.array(z.string().max(500)).optional(),
 			accumulatedPreferences: z.array(z.string().max(500)).optional(),
 			rejectedWineIds: z.array(z.string()).optional(),
@@ -134,7 +134,7 @@ export const ListWinesQuerySchema = z.object({
 	sortBy: z.enum(['price', 'name', 'stock', 'margin']).optional().default('name'),
 	sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
 	limit: z.number().max(100).optional().default(50),
-	cursor: z.string().max(64).optional(),
+	cursor: z.string().optional(),
 });
 
 export const ListWinesResponseSchema = z.object({

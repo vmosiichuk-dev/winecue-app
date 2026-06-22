@@ -80,11 +80,17 @@ async function fetchWines(ctx: QueryCtx, args: WineFetchArgs): Promise<Doc<'wine
 	if (min !== undefined || max !== undefined) {
 		return ctx.db
 			.query('wines')
-			.withIndex('by_price', (q: any) => {
-				let range = q;
-				if (min !== undefined) range = range.gte('price', min);
-				if (max !== undefined) range = range.lte('price', max);
-				return range;
+			.withIndex('by_price', (q) => {
+				if (min !== undefined && max !== undefined) {
+					return q.gte('price', min).lte('price', max);
+				}
+				if (min !== undefined) {
+					return q.gte('price', min);
+				}
+				if (max !== undefined) {
+					return q.lte('price', max);
+				}
+				return q;
 			})
 			.collect();
 	}
@@ -150,10 +156,10 @@ export const list = query({
 		if (inStock !== undefined) {
 			predicates.push((w) => (inStock ? w.stock > 0 : w.stock === 0));
 		}
-		if (color === undefined && priceMin !== undefined) {
+		if (priceMin !== undefined) {
 			predicates.push((w) => w.price >= priceMin);
 		}
-		if (color === undefined && priceMax !== undefined) {
+		if (priceMax !== undefined) {
 			predicates.push((w) => w.price <= priceMax);
 		}
 		if (excludeWineIds !== undefined && excludeWineIds.length > 0) {
@@ -202,10 +208,10 @@ export const search = query({
 		if (inStock !== undefined) {
 			predicates.push((w) => (inStock ? w.stock > 0 : w.stock === 0));
 		}
-		if (color === undefined && minPrice !== undefined) {
+		if (minPrice !== undefined) {
 			predicates.push((w) => w.price >= minPrice);
 		}
-		if (color === undefined && maxPrice !== undefined) {
+		if (maxPrice !== undefined) {
 			predicates.push((w) => w.price <= maxPrice);
 		}
 

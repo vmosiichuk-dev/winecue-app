@@ -12,7 +12,7 @@ export const INDEX_BY = {
 	WINE_STOCK: { name: 'by_stock', field: 'stock' } as const,
 	WINE_COLOR: { name: 'by_color', field: 'color' } as const,
 	WINE_PRODUCER: { name: 'by_producer', field: 'producer' } as const,
-	WINE_PRODUCER_NAME: { name: 'by_producer_name', field: 'producer' } as const,
+	WINE_PRODUCER_NAME: { name: 'by_producer_name', field: ['producer', 'name'] } as const,
 	WINE_FLAG: { name: 'by_flag', field: 'isNewArrival' } as const,
 	SCORING_RULES_PRIORITY: { name: 'by_priority', field: 'priority' } as const,
 	SCORING_RULES_ACTIVE: { name: 'by_active', field: 'isActive' } as const,

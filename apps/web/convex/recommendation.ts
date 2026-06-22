@@ -77,7 +77,9 @@ function buildRecommendations(
 			price: s.wine.price,
 			confidence: s.aiConfidence,
 			reasoning: s.reasoning,
-			provenanceTags: [s.wine.descriptionProvenance, s.wine.dimensionsProvenance],
+			provenanceTags: [s.wine.descriptionProvenance, s.wine.dimensionsProvenance].filter(
+				Boolean as unknown as (x: string | undefined) => x is string
+			),
 		}));
 }
 
@@ -92,7 +94,7 @@ function buildInteractionPayload(
 				priceMin?: number;
 				priceMax?: number;
 				tastingNotes?: string[];
-				excludeWineIds?: string[];
+				excludeWineIds?: Id<'wines'>[];
 		  }
 		| undefined,
 	recommendations: Recommendation[],
@@ -142,7 +144,9 @@ function toCompareWine(wine: Doc<'wines'>) {
 		tastingNotes: wine.tastingNotes,
 		description: wine.description,
 		structuredDimensions: wine.structuredDimensions,
-		provenanceTags: [wine.descriptionProvenance, wine.dimensionsProvenance],
+		provenanceTags: [wine.descriptionProvenance, wine.dimensionsProvenance].filter(
+			Boolean as unknown as (x: string | undefined) => x is string
+		),
 	};
 }
 

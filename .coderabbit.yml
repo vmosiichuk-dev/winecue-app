@@ -1,0 +1,51 @@
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  review_details: true
+  commit_status: true
+  collapse_walkthrough: false
+  poem: false
+  path_filters:
+    - "!pnpm-lock.yaml"
+    - "!**/package-lock.json"
+    - "!**/yarn.lock"
+    - "!**/.svelte-kit/**"
+    - "!**/.vercel/**"
+    - "!**/.turbo/**"
+    - "!**/dist/**"
+    - "!**/convex/_generated/**"
+    - "!**/*.test.ts.snap"
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    base_branches:
+      - dev
+      - main
+  tools:
+    biome:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    osv-scanner:
+      enabled: true
+    semgrep:
+      enabled: true
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    dotenvLint:
+      enabled: true
+chat:
+  auto_reply: true

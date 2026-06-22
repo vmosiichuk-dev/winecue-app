@@ -1,0 +1,35 @@
+{
+	"name": "winecue",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"check": "turbo run check",
+		"clean": "turbo run clean",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write .",
+		"test": "turbo run test",
+		"prepare": "husky"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.0.8",
+		"turbo": "^2.9.18"
+	},
+	"lint-staged": {
+		"*.{js,ts,svelte}": [
+			"biome check --write --no-errors-on-unmatched"
+		],
+		"*.{json,md,yml,yaml}": [
+			"biome format --write --no-errors-on-unmatched"
+		]
+	},
+	"packageManager": "pnpm@9.0.0"
+}

@@ -1,0 +1,50 @@
+@import "open-props/style";
+@import "open-props/normalize";
+
+:root {
+	/* Colors */
+	--winecue-primary: #7b1f3c;
+	--winecue-primary-light: #a63c5a;
+	--winecue-primary-dark: #5a1529;
+	--winecue-surface: #faf7f5;
+	--winecue-surface-raised: #ffffff;
+	--winecue-text: #1a1a1a;
+	--winecue-text-muted: #6b6b6b;
+	--winecue-border: #e2dcd7;
+
+	/* Confidence colors */
+	--confidence-high: #2d7d46;
+	--confidence-medium: #c78d1a;
+	--confidence-low: #c45b2a;
+
+	/* Spacing */
+	--space-xs: var(--size-1);
+	--space-sm: var(--size-2);
+	--space-md: var(--size-3);
+	--space-lg: var(--size-4);
+	--space-xl: var(--size-6);
+
+	/* Typography */
+	--font-body: system-ui, -apple-system, sans-serif;
+	--font-heading: georgia, serif;
+	--text-sm: var(--font-size-0);
+	--text-base: var(--font-size-1);
+	--text-lg: var(--font-size-2);
+	--text-xl: var(--font-size-3);
+
+	/* Radii */
+	--radius-sm: var(--radius-2);
+	--radius-md: var(--radius-3);
+	--radius-lg: var(--radius-4);
+
+	/* Shadows */
+	--shadow-sm: var(--shadow-1);
+	--shadow-md: var(--shadow-3);
+	--shadow-lg: var(--shadow-5);
+}
+
+body {
+	font-family: var(--font-body);
+	background-color: var(--winecue-surface);
+	color: var(--winecue-text);
+}

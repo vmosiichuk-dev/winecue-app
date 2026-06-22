@@ -2,7 +2,6 @@ import { ConvexClient } from 'convex/browser';
 import type { FunctionReference } from 'convex/server';
 import { getContext, setContext } from 'svelte';
 import { type Readable, readable } from 'svelte/store';
-import type { api } from '../../../convex/_generated/api';
 
 const CONVEX_CONTEXT_KEY = 'convex-client';
 
@@ -37,5 +36,3 @@ export function convexQuery<T>(
 		});
 	});
 }
-
-export type { api };

@@ -1,5 +1,5 @@
 import { ConvexClient } from 'convex/browser';
-import type { FunctionReference } from 'convex/server';
+import type { FunctionArgs, FunctionReference, FunctionReturnType } from 'convex/server';
 import { getContext, setContext } from 'svelte';
 import { type Readable, readable } from 'svelte/store';
 
@@ -28,14 +28,14 @@ export function useConvexClient(): ConvexClient {
 	return getContext<ConvexClient>(CONVEX_CONTEXT_KEY);
 }
 
-export function convexQuery<T>(
-	queryRef: FunctionReference<'query', 'public', Record<string, unknown>, T>,
-	args: Record<string, unknown>
-): Readable<T | undefined> {
+export function convexQuery<Query extends FunctionReference<'query'>>(
+	queryRef: Query,
+	args: FunctionArgs<Query>
+): Readable<FunctionReturnType<Query> | undefined> {
 	const client = getConvexClient();
-	return readable<T | undefined>(undefined, (set) => {
+	return readable<FunctionReturnType<Query> | undefined>(undefined, (set) => {
 		return client.onUpdate(queryRef, args, (data) => {
-			set(data as T);
+			set(data);
 		});
 	});
 }

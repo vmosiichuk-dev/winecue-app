@@ -1,13 +1,10 @@
 import { z } from 'zod';
+import { RULE_ACTION_TYPE, RULE_OPERATOR, RULE_TARGET } from './constants.js';
+import { zodEnumFromConst } from './helpers.js';
 
-export const RuleOperator = z.enum(['eq', 'lt', 'gt', 'lte', 'gte', 'in']);
-export const RuleActionType = z.enum(['adjust_score', 'filter_out', 'boost_priority']);
-export const RuleTarget = z.enum([
-	'base_score',
-	'margin_boost',
-	'new_arrival_boost',
-	'clearance_boost',
-]);
+export const RuleOperator = zodEnumFromConst(RULE_OPERATOR);
+export const RuleActionType = zodEnumFromConst(RULE_ACTION_TYPE);
+export const RuleTarget = zodEnumFromConst(RULE_TARGET);
 
 export const ScoringRuleSchema = z.object({
 	id: z.string(),

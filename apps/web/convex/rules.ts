@@ -1,5 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { SCORING_RULES_ACTION_VALIDATOR, SCORING_RULES_CONDITION_VALIDATOR } from './schema';
+import { TABLES } from './tables';
 
 export const list = query({
 	args: {},
@@ -11,32 +13,8 @@ export const list = query({
 export const create = mutation({
 	args: {
 		name: v.string(),
-		condition: v.object({
-			field: v.string(),
-			operator: v.union(
-				v.literal('eq'),
-				v.literal('lt'),
-				v.literal('gt'),
-				v.literal('lte'),
-				v.literal('gte'),
-				v.literal('in')
-			),
-			value: v.union(v.string(), v.number(), v.boolean(), v.array(v.string())),
-		}),
-		action: v.object({
-			type: v.union(
-				v.literal('adjust_score'),
-				v.literal('filter_out'),
-				v.literal('boost_priority')
-			),
-			target: v.union(
-				v.literal('base_score'),
-				v.literal('margin_boost'),
-				v.literal('new_arrival_boost'),
-				v.literal('clearance_boost')
-			),
-			value: v.number(),
-		}),
+		...SCORING_RULES_CONDITION_VALIDATOR,
+		...SCORING_RULES_ACTION_VALIDATOR,
 		priority: v.number(),
 	},
 	handler: async (ctx, args) => {
@@ -50,38 +28,10 @@ export const create = mutation({
 
 export const update = mutation({
 	args: {
-		id: v.id('scoringRules'),
+		id: v.id(TABLES.SCORING_RULES),
 		name: v.optional(v.string()),
-		condition: v.optional(
-			v.object({
-				field: v.string(),
-				operator: v.union(
-					v.literal('eq'),
-					v.literal('lt'),
-					v.literal('gt'),
-					v.literal('lte'),
-					v.literal('gte'),
-					v.literal('in')
-				),
-				value: v.union(v.string(), v.number(), v.boolean(), v.array(v.string())),
-			})
-		),
-		action: v.optional(
-			v.object({
-				type: v.union(
-					v.literal('adjust_score'),
-					v.literal('filter_out'),
-					v.literal('boost_priority')
-				),
-				target: v.union(
-					v.literal('base_score'),
-					v.literal('margin_boost'),
-					v.literal('new_arrival_boost'),
-					v.literal('clearance_boost')
-				),
-				value: v.number(),
-			})
-		),
+		condition: v.optional(SCORING_RULES_CONDITION_VALIDATOR.condition),
+		action: v.optional(SCORING_RULES_ACTION_VALIDATOR.action),
 		priority: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {

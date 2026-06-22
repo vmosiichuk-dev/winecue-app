@@ -109,7 +109,7 @@ export const ImportResponseSchema = z.object({
 	errors: z.array(
 		z.object({
 			row: z.number(),
-			rawData: z.record(z.string()),
+			rawData: z.record(z.string(), z.string()),
 			message: z.string(),
 		})
 	),
@@ -218,7 +218,7 @@ export const ApiErrorSchema = z.object({
 			'INTERNAL_ERROR',
 		]),
 		message: z.string(),
-		details: z.record(z.unknown()).optional(),
+		details: z.record(z.string(), z.unknown()).optional(),
 	}),
 });
 

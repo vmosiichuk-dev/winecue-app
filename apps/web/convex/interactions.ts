@@ -1,5 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { INTERACTIONS_OUTCOME_VALIDATOR } from './schema';
+import { TABLES } from './tables';
 
 export const list = query({
 	args: {},
@@ -63,13 +65,8 @@ export const create = mutation({
 
 export const updateOutcome = mutation({
 	args: {
-		id: v.id('interactions'),
-		outcome: v.union(
-			v.literal('sold'),
-			v.literal('declined'),
-			v.literal('escalated'),
-			v.literal('abandoned')
-		),
+		id: v.id(TABLES.INTERACTIONS),
+		...INTERACTIONS_OUTCOME_VALIDATOR,
 		selectedWineId: v.optional(v.string()),
 		feedback: v.optional(v.string()),
 	},

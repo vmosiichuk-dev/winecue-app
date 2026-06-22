@@ -4,6 +4,34 @@ import { mutation, query } from './_generated/server';
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function notConfiguredResult() {
+	return { success: false as const, error: 'NOT_CONFIGURED' as const };
+}
+
+function lockedResult(lockedUntil: number) {
+	return {
+		success: false as const,
+		error: 'ACCOUNT_LOCKED' as const,
+		lockedUntil,
+	};
+}
+
+function invalidPinResult() {
+	return { success: false as const, error: 'INVALID_PIN' as const };
+}
+
+function successResult() {
+	return { success: true as const };
+}
+
+// ---------------------------------------------------------------------------
+// Queries & Mutations
+// ---------------------------------------------------------------------------
+
 export const get = query({
 	args: {},
 	handler: async (ctx) => {
@@ -50,17 +78,14 @@ export const verify = mutation({
 			.query('authState')
 			.withIndex('by_singleton', (q) => q.eq('singleton', 'AUTH'))
 			.unique();
+
 		if (!state) {
-			return { success: false as const, error: 'NOT_CONFIGURED' as const };
+			return notConfiguredResult();
 		}
 
 		const now = Date.now();
 		if (state.lockedUntil && state.lockedUntil > now) {
-			return {
-				success: false as const,
-				error: 'ACCOUNT_LOCKED' as const,
-				lockedUntil: state.lockedUntil,
-			};
+			return lockedResult(state.lockedUntil);
 		}
 
 		if (state.pinHash !== args.pinHash) {
@@ -70,11 +95,7 @@ export const verify = mutation({
 				failedAttempts: newFailedAttempts,
 				lockedUntil: shouldLock ? now + LOCKOUT_DURATION_MS : undefined,
 			});
-			return {
-				success: false as const,
-				error: shouldLock ? ('ACCOUNT_LOCKED' as const) : ('INVALID_PIN' as const),
-				lockedUntil: shouldLock ? now + LOCKOUT_DURATION_MS : undefined,
-			};
+			return shouldLock ? lockedResult(now + LOCKOUT_DURATION_MS) : invalidPinResult();
 		}
 
 		await ctx.db.patch(state._id, {
@@ -82,6 +103,6 @@ export const verify = mutation({
 			lastAuthenticated: now,
 			lockedUntil: undefined,
 		});
-		return { success: true as const };
+		return successResult();
 	},
 });

@@ -1,11 +1,158 @@
+import type { AIResponse } from '@winecue/shared-types';
 import { AIResponseSchema, CompareResponseSchema } from '@winecue/shared-types';
 import { v } from 'convex/values';
 import { api } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
+import type { ActionCtx } from './_generated/server';
 import { action } from './_generated/server';
 import { DEFAULT_TEXT_MODEL, GeminiClient } from './lib/gemini.js';
 import { buildCompareMessages } from './lib/prompts/compare.js';
 import { buildRecommendMessages } from './lib/prompts/recommend.js';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function rankCandidates(candidates: Doc<'wines'>[]): Doc<'wines'>[] {
+	return [...candidates].sort((a, b) => {
+		const marginA = a.marginPercent ?? 0;
+		const marginB = b.marginPercent ?? 0;
+		if (marginA !== marginB) return marginB - marginA;
+		if (a.isPriorityStock !== b.isPriorityStock) return a.isPriorityStock ? -1 : 1;
+		return b.stock - a.stock;
+	});
+}
+
+function toPromptWine(wine: Doc<'wines'>) {
+	return {
+		id: wine._id,
+		name: wine.name,
+		producer: wine.producer,
+		price: wine.price,
+		marginPercent: wine.marginPercent,
+		color: wine.color,
+		sweetness: wine.sweetness,
+		body: wine.body,
+		grapeVariety: wine.grapeVariety,
+		vintage: wine.vintage,
+		region: wine.region,
+		tastingNotes: wine.tastingNotes,
+		description: wine.description,
+		structuredDimensions: wine.structuredDimensions,
+	};
+}
+
+type Recommendation = {
+	wineId: string;
+	name: string;
+	producer: string;
+	price: number;
+	confidence: number;
+	reasoning: string;
+	provenanceTags: string[];
+};
+
+function buildRecommendations(
+	topCandidates: Doc<'wines'>[],
+	aiWines: AIResponse['wines']
+): Recommendation[] {
+	const scoredWines = topCandidates.map((wine) => {
+		const aiMatch = aiWines.find((w) => w.wineId === wine._id);
+		return {
+			wine,
+			aiConfidence: aiMatch?.confidence ?? 0,
+			reasoning: aiMatch?.reasoning ?? '',
+		};
+	});
+
+	scoredWines.sort((a, b) => b.aiConfidence - a.aiConfidence);
+
+	return scoredWines
+		.filter((s) => s.aiConfidence > 0)
+		.slice(0, 4)
+		.map((s) => ({
+			wineId: s.wine._id,
+			name: s.wine.name,
+			producer: s.wine.producer,
+			price: s.wine.price,
+			confidence: s.aiConfidence,
+			reasoning: s.reasoning,
+			provenanceTags: [s.wine.descriptionProvenance, s.wine.dimensionsProvenance].filter(
+				Boolean as unknown as (x: string | undefined) => x is string
+			),
+		}));
+}
+
+function buildInteractionPayload(
+	sessionId: string,
+	query: string,
+	filters:
+		| {
+				color?: string;
+				sweetness?: string;
+				body?: string;
+				priceMin?: number;
+				priceMax?: number;
+				tastingNotes?: string[];
+				excludeWineIds?: Id<'wines'>[];
+		  }
+		| undefined,
+	recommendations: Recommendation[],
+	result: {
+		data: { queryInterpretation: unknown };
+		usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+	},
+	responseTimeMs: number
+) {
+	return {
+		sessionId,
+		query,
+		aiModel: DEFAULT_TEXT_MODEL,
+		usedFallback: false,
+		responseTimeMs,
+		promptTokens: result.usage.promptTokens,
+		completionTokens: result.usage.completionTokens,
+		totalTokens: result.usage.totalTokens,
+		promptVersion: 'recommend-v1',
+		filters: filters
+			? {
+					color: filters.color,
+					sweetness: filters.sweetness,
+					body: filters.body,
+					priceMin: filters.priceMin,
+					priceMax: filters.priceMax,
+					tastingNotes: filters.tastingNotes,
+				}
+			: undefined,
+		recommendations,
+	};
+}
+
+function toCompareWine(wine: Doc<'wines'>) {
+	return {
+		id: wine._id,
+		name: wine.name,
+		producer: wine.producer,
+		price: wine.price,
+		color: wine.color,
+		grapeVariety: wine.grapeVariety,
+		vintage: wine.vintage,
+		region: wine.region,
+		country: wine.country,
+		sweetness: wine.sweetness,
+		body: wine.body,
+		tastingNotes: wine.tastingNotes,
+		description: wine.description,
+		structuredDimensions: wine.structuredDimensions,
+		provenanceTags: [wine.descriptionProvenance, wine.dimensionsProvenance].filter(
+			Boolean as unknown as (x: string | undefined) => x is string
+		),
+	};
+}
+
+// ---------------------------------------------------------------------------
+// Actions
+// ---------------------------------------------------------------------------
 
 export const recommend = action({
 	args: {
@@ -19,7 +166,7 @@ export const recommend = action({
 				priceMin: v.optional(v.number()),
 				priceMax: v.optional(v.number()),
 				tastingNotes: v.optional(v.array(v.string())),
-				excludeWineIds: v.optional(v.array(v.string())),
+				excludeWineIds: v.optional(v.array(v.id('wines'))),
 			})
 		),
 	},
@@ -38,91 +185,34 @@ export const recommend = action({
 			color,
 			priceMin,
 			priceMax,
-			excludeWineIds: excludeWineIds?.map((id) => id as unknown as Id<'wines'>) ?? [],
+			excludeWineIds: excludeWineIds ?? [],
 		});
 
-		const topCandidates = candidates
-			.sort((a: Doc<'wines'>, b: Doc<'wines'>) => {
-				const marginA = a.marginPercent ?? 0;
-				const marginB = b.marginPercent ?? 0;
-				if (marginA !== marginB) return marginB - marginA;
-				if (a.isPriorityStock !== b.isPriorityStock) return a.isPriorityStock ? -1 : 1;
-				return b.stock - a.stock;
-			})
-			.slice(0, 20);
+		const topCandidates = rankCandidates(candidates).slice(0, 20);
 
 		const client = new GeminiClient(apiKey);
 		const messages = buildRecommendMessages({
 			query: args.query,
 			filters: args.filters,
-			candidates: topCandidates.map((w: Doc<'wines'>) => ({
-				id: w._id,
-				name: w.name,
-				producer: w.producer,
-				price: w.price,
-				marginPercent: w.marginPercent,
-				color: w.color,
-				sweetness: w.sweetness,
-				body: w.body,
-				grapeVariety: w.grapeVariety,
-				vintage: w.vintage,
-				region: w.region,
-				tastingNotes: w.tastingNotes,
-				description: w.description,
-				structuredDimensions: w.structuredDimensions,
-			})),
+			candidates: topCandidates.map(toPromptWine),
 		});
 
 		const result = await client.generateStructured(messages, AIResponseSchema, 0.3);
-
 		const responseTimeMs = Date.now() - startTime;
 
-		const scoredWines = topCandidates.map((wine: Doc<'wines'>) => {
-			const aiMatch = result.data.wines.find((w) => w.wineId === wine._id);
-			return {
-				wine,
-				aiConfidence: aiMatch?.confidence ?? 0,
-				reasoning: aiMatch?.reasoning ?? '',
-			};
-		});
+		const recommendations = buildRecommendations(topCandidates, result.data.wines);
 
-		scoredWines.sort((a, b) => b.aiConfidence - a.aiConfidence);
-
-		const recommendations = scoredWines
-			.filter((s) => s.aiConfidence > 0)
-			.slice(0, 4)
-			.map((s) => ({
-				wineId: s.wine._id,
-				name: s.wine.name,
-				producer: s.wine.producer,
-				price: s.wine.price,
-				confidence: s.aiConfidence,
-				reasoning: s.reasoning,
-				provenanceTags: [s.wine.descriptionProvenance, s.wine.dimensionsProvenance],
-			}));
-
-		await ctx.runMutation(api.interactions.create, {
-			sessionId: args.sessionId,
-			query: args.query,
-			aiModel: DEFAULT_TEXT_MODEL,
-			usedFallback: false,
-			responseTimeMs,
-			promptTokens: result.usage.promptTokens,
-			completionTokens: result.usage.completionTokens,
-			totalTokens: result.usage.totalTokens,
-			promptVersion: 'recommend-v1',
-			filters: args.filters
-				? {
-						color: args.filters.color,
-						sweetness: args.filters.sweetness,
-						body: args.filters.body,
-						priceMin: args.filters.priceMin,
-						priceMax: args.filters.priceMax,
-						tastingNotes: args.filters.tastingNotes,
-					}
-				: undefined,
-			recommendations,
-		});
+		await ctx.runMutation(
+			api.interactions.create,
+			buildInteractionPayload(
+				args.sessionId,
+				args.query,
+				args.filters,
+				recommendations,
+				result,
+				responseTimeMs
+			)
+		);
 
 		return {
 			success: true as const,
@@ -162,40 +252,8 @@ export const compare = action({
 
 		const client = new GeminiClient(apiKey);
 		const messages = buildCompareMessages({
-			wineA: {
-				id: wineA._id,
-				name: wineA.name,
-				producer: wineA.producer,
-				price: wineA.price,
-				color: wineA.color,
-				grapeVariety: wineA.grapeVariety,
-				vintage: wineA.vintage,
-				region: wineA.region,
-				country: wineA.country,
-				sweetness: wineA.sweetness,
-				body: wineA.body,
-				tastingNotes: wineA.tastingNotes,
-				description: wineA.description,
-				structuredDimensions: wineA.structuredDimensions,
-				provenanceTags: [wineA.descriptionProvenance, wineA.dimensionsProvenance],
-			},
-			wineB: {
-				id: wineB._id,
-				name: wineB.name,
-				producer: wineB.producer,
-				price: wineB.price,
-				color: wineB.color,
-				grapeVariety: wineB.grapeVariety,
-				vintage: wineB.vintage,
-				region: wineB.region,
-				country: wineB.country,
-				sweetness: wineB.sweetness,
-				body: wineB.body,
-				tastingNotes: wineB.tastingNotes,
-				description: wineB.description,
-				structuredDimensions: wineB.structuredDimensions,
-				provenanceTags: [wineB.descriptionProvenance, wineB.dimensionsProvenance],
-			},
+			wineA: toCompareWine(wineA),
+			wineB: toCompareWine(wineB),
 			customerQuery: args.sessionContext?.customerQuery,
 		});
 
@@ -206,7 +264,6 @@ export const compare = action({
 		});
 
 		const result = await client.generateStructured(messages, compareSchema, 0.4);
-
 		const responseTimeMs = Date.now() - startTime;
 
 		return {

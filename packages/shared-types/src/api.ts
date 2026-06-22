@@ -17,9 +17,9 @@ export const RecommendRequestSchema = z.object({
 		.optional(),
 	sessionContext: z
 		.object({
-			sessionId: z.string(),
-			previousQueries: z.array(z.string()).optional(),
-			accumulatedPreferences: z.array(z.string()).optional(),
+			sessionId: z.string().max(64),
+			previousQueries: z.array(z.string().max(500)).optional(),
+			accumulatedPreferences: z.array(z.string().max(500)).optional(),
 			rejectedWineIds: z.array(z.string()).optional(),
 		})
 		.optional(),
@@ -46,12 +46,12 @@ export type RecommendRequest = z.infer<typeof RecommendRequestSchema>;
 export type RecommendResponse = z.infer<typeof RecommendResponseSchema>;
 
 export const CompareRequestSchema = z.object({
-	wineAId: z.string(),
-	wineBId: z.string(),
+	wineAId: z.string().max(64),
+	wineBId: z.string().max(64),
 	sessionContext: z
 		.object({
-			sessionId: z.string(),
-			customerQuery: z.string().optional(),
+			sessionId: z.string().max(64),
+			customerQuery: z.string().max(500).optional(),
 		})
 		.optional(),
 });
@@ -130,7 +130,7 @@ export const ListWinesQuerySchema = z.object({
 	inStock: z.boolean().optional().default(true),
 	minPrice: z.number().optional(),
 	maxPrice: z.number().optional(),
-	search: z.string().optional(),
+	search: z.string().max(500).optional(),
 	sortBy: z.enum(['price', 'name', 'stock', 'margin']).optional().default('name'),
 	sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
 	limit: z.number().max(100).optional().default(50),
@@ -148,7 +148,7 @@ export type ListWinesQuery = z.infer<typeof ListWinesQuerySchema>;
 export type ListWinesResponse = z.infer<typeof ListWinesResponseSchema>;
 
 export const LogInteractionRequestSchema = z.object({
-	interactionId: z.string(),
+	interactionId: z.string().max(64),
 	outcome: InteractionOutcome,
 	selectedWineId: z.string().optional(),
 	feedback: z.string().optional(),
@@ -163,9 +163,9 @@ export type LogInteractionRequest = z.infer<typeof LogInteractionRequestSchema>;
 export type LogInteractionResponse = z.infer<typeof LogInteractionResponseSchema>;
 
 export const AddFeedbackRequestSchema = z.object({
-	wineId: z.string(),
+	wineId: z.string().max(64),
 	feedback: z.string().min(1).max(1000),
-	interactionId: z.string().optional(),
+	interactionId: z.string().max(64).optional(),
 });
 
 export const AddFeedbackResponseSchema = z.object({

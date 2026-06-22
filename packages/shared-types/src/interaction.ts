@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { INTERACTION_OUTCOME } from './constants.js';
+import { zodEnumFromConst } from './helpers.js';
 import { DataProvenance, WineBody, WineColor, WineSweetness } from './wine.js';
 
 export const RecommendedWineSchema = z.object({
@@ -20,7 +22,7 @@ export const RecommendedWineSchema = z.object({
 		.optional(),
 });
 
-export const InteractionOutcome = z.enum(['sold', 'declined', 'escalated', 'abandoned']);
+export const InteractionOutcome = zodEnumFromConst(INTERACTION_OUTCOME);
 
 export const InteractionSchema = z.object({
 	id: z.string(),

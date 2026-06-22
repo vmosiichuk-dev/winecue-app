@@ -127,9 +127,6 @@ dist
 .svelte-kit
 .vercel
 
-# Convex generated files
-**/convex/_generated/
-
 # OS files
 .DS_Store
 Thumbs.db

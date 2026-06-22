@@ -94,20 +94,39 @@ function evaluateCondition(condition: RuleCondition, ctx: WineScoreContext): boo
 			return fieldValue >= value;
 		}
 		case 'in':
-			return Array.isArray(value) && value.includes(fieldValue as string);
+			return Array.isArray(value) && typeof fieldValue === 'string' && value.includes(fieldValue);
 		default:
 			return false;
 	}
 }
 
+const STOCK_BONUSES = [
+	{ threshold: 10, bonus: 10 },
+	{ threshold: 5, bonus: 5 },
+	{ threshold: 0, bonus: 2 },
+];
+
+const MARGIN_BONUSES = [
+	{ threshold: 40, bonus: 10 },
+	{ threshold: 25, bonus: 5 },
+];
+
 function computeBaseScore(wine: Wine): number {
 	let score = 50;
-	if (wine.stock > 10) score += 10;
-	else if (wine.stock > 5) score += 5;
-	else if (wine.stock > 0) score += 2;
 
-	if (wine.marginPercent && wine.marginPercent > 40) score += 10;
-	else if (wine.marginPercent && wine.marginPercent > 25) score += 5;
+	for (const { threshold, bonus } of STOCK_BONUSES) {
+		if (wine.stock > threshold) {
+			score += bonus;
+			break;
+		}
+	}
+
+	for (const { threshold, bonus } of MARGIN_BONUSES) {
+		if (wine.marginPercent && wine.marginPercent > threshold) {
+			score += bonus;
+			break;
+		}
+	}
 
 	if (wine.description && wine.description.length > 50) score += 5;
 	if (wine.structuredDimensions) score += 5;

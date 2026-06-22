@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import { DATA_PROVENANCE, WINE_BODY, WINE_COLOR, WINE_SWEETNESS } from './constants.js';
+import { zodEnumFromConst } from './helpers.js';
 
-export const WineColor = z.enum(['red', 'white', 'rose', 'sparkling', 'fortified', 'spirit']);
-export const WineSweetness = z.enum(['dry', 'semi_dry', 'semi_sweet', 'sweet']);
-export const WineBody = z.enum(['light', 'medium', 'full']);
-export const DataProvenance = z.enum(['t1_producer', 't2_inferred', 't3_wordpress']);
+export const WineColor = zodEnumFromConst(WINE_COLOR);
+export const WineSweetness = zodEnumFromConst(WINE_SWEETNESS);
+export const WineBody = zodEnumFromConst(WINE_BODY);
+export const DataProvenance = zodEnumFromConst(DATA_PROVENANCE);
 
 export const StructuredDimensions = z.object({
 	dryness: z.number().min(0).max(10).describe('0 = very sweet, 10 = very dry'),

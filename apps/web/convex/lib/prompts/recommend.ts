@@ -55,15 +55,15 @@ function formatWineDetails(w: WineCandidate): string {
 export function buildRecommendMessages(ctx: RecommendContext): Message[] {
 	const candidateList = ctx.candidates.map(formatWineDetails).join('\n');
 
-	const filterParts: string[] = [];
-	if (ctx.filters?.color) filterParts.push(`color: ${ctx.filters.color}`);
-	if (ctx.filters?.sweetness) filterParts.push(`sweetness: ${ctx.filters.sweetness}`);
-	if (ctx.filters?.body) filterParts.push(`body: ${ctx.filters.body}`);
-	if (ctx.filters?.priceMin) filterParts.push(`min price: ${ctx.filters.priceMin} PLN`);
-	if (ctx.filters?.priceMax) filterParts.push(`max price: ${ctx.filters.priceMax} PLN`);
-	if (ctx.filters?.tastingNotes?.length)
-		filterParts.push(`tasting notes: ${ctx.filters.tastingNotes.join(', ')}`);
-	const filterStr = filterParts.length > 0 ? `\nHard filters: ${filterParts.join('; ')}.` : '';
+	const filterEntries = [
+		ctx.filters?.color && `color: ${ctx.filters.color}`,
+		ctx.filters?.sweetness && `sweetness: ${ctx.filters.sweetness}`,
+		ctx.filters?.body && `body: ${ctx.filters.body}`,
+		ctx.filters?.priceMin && `min price: ${ctx.filters.priceMin} PLN`,
+		ctx.filters?.priceMax && `max price: ${ctx.filters.priceMax} PLN`,
+		ctx.filters?.tastingNotes?.length && `tasting notes: ${ctx.filters.tastingNotes.join(', ')}`,
+	].filter(Boolean);
+	const filterStr = filterEntries.length > 0 ? `\nHard filters: ${filterEntries.join('; ')}.` : '';
 
 	const systemPrompt = `You are WineCue, an AI sommelier assistant for a Polish wine shop. A floor associate has relayed a customer's request. Your job is to select the best matching wines from the available catalogue.
 

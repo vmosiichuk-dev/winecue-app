@@ -1,0 +1,53 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 100
+	},
+	"linter": {
+		"enabled": true,
+		"domains": {
+			"test": "recommended",
+			"svelte": "recommended"
+		},
+		"rules": {
+			"preset": "recommended",
+			"suspicious": {
+				"noConsole": "warn"
+			},
+			"style": {
+				"useConst": "error"
+			},
+			"correctness": {
+				"noUnusedVariables": "error"
+			}
+		}
+	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"trailingCommas": "es5"
+		}
+	},
+	"files": {
+		"includes": [
+			"**",
+			"!!**/node_modules",
+			"!!**/.svelte-kit",
+			"!!**/.vercel",
+			"!!**/.turbo",
+			"!!**/dist",
+			"!!**/convex/_generated",
+			"!!**/pnpm-lock.yaml"
+		],
+		"ignoreUnknown": true
+	}
+}

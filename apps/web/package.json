@@ -1,0 +1,44 @@
+{
+	"name": "@winecue/web",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=24.17.0"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"clean": "rm -rf .svelte-kit .vercel",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage"
+	},
+	"dependencies": {
+		"@google/generative-ai": "^0.24.1",
+		"@internationalized/date": "^3.12.2",
+		"@winecue/shared-types": "workspace:*",
+		"bcryptjs": "^3.0.3",
+		"bits-ui": "^2.18.1",
+		"convex": "^1.41.0",
+		"neverthrow": "^8.2.0",
+		"open-props": "^1.7.23",
+		"papaparse": "^5.5.4",
+		"zod": "^3.24.3"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-vercel": "^6.3.4",
+		"@sveltejs/kit": "^2.66.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@types/papaparse": "^5.5.2",
+		"@vitest/coverage-v8": "^4.1.9",
+		"@winecue/tsconfig": "workspace:*",
+		"svelte": "^5.56.3",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.16",
+		"vitest": "^4.1.9"
+	}
+}
